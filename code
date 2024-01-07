@@ -1,0 +1,58 @@
+import keras
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from keras.datasets import cifar10
+import numpy as np
+import matplotlib.pyplot as plt
+
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+model = Sequential()
+model.add(Conv2D(6, (5, 5), activation='relu', input_shape=(32, 32, 3)))
+model.add(MaxPooling2D((2, 2), strides=2))
+model.add(Conv2D(16, (5, 5), activation='relu'))
+model.add(MaxPooling2D((2, 2), strides=2))
+model.add(Flatten())
+model.add(Dense(120, activation='relu'))
+model.add(Dense(84, activation='relu'))
+model.add(Dense(10, activation='sigmoid'))
+
+
+model.compile(optimizer='sgd',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+y_train = keras.utils.to_categorical(y_train, 10)
+y_test = keras.utils.to_categorical(y_test, 10)
+
+
+history = model.fit(x_train, y_train, epochs=10, batch_size=64, validation_data=(x_test, y_test))
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Loss vs Number of Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+loss, accuracy = model.evaluate(x_test, y_test, verbose=0)
+print(f"Overall Network Accuracy: {accuracy * 100:.2f}%")
+
+class_names = [
+    'airplane', 'automobile', 'bird', 'cat',
+    'deer', 'dog', 'frog', 'horse',
+    'ship', 'truck'
+]
+
+class_accuracies = {}
+
+for class_idx, class_name in enumerate(class_names):
+    class_indices = (y_test.argmax(axis=1) == class_idx)
+    class_x = x_test[class_indices]
+    class_y = y_test[class_indices]
+    class_loss, class_accuracy = model.evaluate(class_x, class_y, verbose=0)
+    class_accuracies[class_name] = class_accuracy * 100
+    print(f"Accuracy for {class_name}: {class_accuracy * 100:.2f}%")
